@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Bản đồ cảnh báo tai nạn - Mù Cang Chải</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+        }
+
+        header {
+            background-color: #0f4c81;
+            color: white;
+            padding: 12px 20px;
+            text-align: center;
+        }
+
+        #searchBox {
+            padding: 10px;
+            background: white;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            border-bottom: 1px solid #ddd;
+        }
+
+        #searchInput {
+            width: 420px;
+            padding: 10px;
+            font-size: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        #searchBox label {
+            font-size: 14px;
+        }
+
+        button {
+            padding: 10px 14px;
+            border: none;
+            border-radius: 5px;
+            background-color: #0f4c81;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background-color: #1565a8;
+        }
+
+        #map {
+            height: calc(100vh - 130px);
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h2>Bản đồ cảnh báo điểm nguy cơ tai nạn giao thông xã Mù Cang Chải</h2>
+</header>
+
+<div id="searchBox">
+    <input 
+        type="text" 
+        id="searchInput" 
+        placeholder="Nhập vị trí, tuyến đường hoặc nguyên nhân..."
+    >
+
+    <label><input type="checkbox" class="levelFilter" value="Nguy cơ thấp"> Thấp</label>
+    <label><input type="checkbox" class="levelFilter" value="Nguy cơ trung bình"> Trung bình</label>
+    <label><input type="checkbox" class="levelFilter" value="Nguy cơ cao"> Cao</label>
+    <label><input type="checkbox" class="levelFilter" value="Nguy cơ rất cao"> Rất cao</label>
+
+    <button onclick="searchAccidents()">Lọc</button>
+    <button onclick="resetSearch()">Hiện tất cả</button>
+</div>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+<script>
+    // =========================
+    // 1. KHỞI TẠO BẢN ĐỒ
+    // =========================
+
+    const map = L.map("map").setView([21.51, 104.18], 11);
+
+    const normalMap = L.tileLayer(
+        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        {
+            attribution: "&copy; OpenStreetMap contributors"
+        }
+    );
+
+    const satelliteMap = L.tileLayer(
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        {
+            attribution: "Tiles &copy; Esri"
+        }
+    );
+
+    normalMap.addTo(map);
+
+    L.control.layers({
+        "Bản đồ thường": normalMap,
+        "Ảnh vệ tinh": satelliteMap
+    }).addTo(map);
+
+
+    // =========================
+    // 2. BIẾN DỮ LIỆU
+    // =========================
+
+    let accidentData = [];
+    const markerGroup = L.layerGroup().addTo(map);
+
+
+    // =========================
+    // 3. HÀM CHỌN MÀU
+    // =========================
+
+    function getColor(soVu) {
+        if (soVu >= 20) return "red";
+        if (soVu >= 10) return "orange";
+        if (soVu >= 5) return "yellow";
+        return "green";
+    }
+
+
+    // =========================
+    // 4. HIỂN THỊ MARKER
+    // =========================
+
+    function showAccidents(data) {
+        markerGroup.clearLayers();
+
+        data.forEach(function(item) {
+            L.circleMarker([item.lat, item.lng], {
+                radius: 10,
+                color: getColor(item.soVu),
+                fillColor: getColor(item.soVu),
+                fillOpacity: 0.85,
+                weight: 2
+            })
+            .addTo(markerGroup)
+            .bindPopup(`
+                <b>${item.viTri}</b><br><br>
+                <b>Tuyến đường:</b> ${item.tuyenDuong}<br>
+                <b>Số vụ tai nạn:</b> ${item.soVu}<br>
+                <b>Mức độ:</b> ${item.mucDo}<br>
+                <b>Nguyên nhân:</b> ${item.nguyenNhan}<br>
+                <b>Khuyến cáo:</b> ${item.khuyenCao}
+            `);
+        });
+
+        if (data.length > 0) {
+            map.fitBounds(markerGroup.getBounds(), {
+                padding: [30, 30]
+            });
+        }
+    }
+
+
+    // =========================
+    // 5. ĐỌC FILE CSV
+    // =========================
+
+    Papa.parse("data.csv", {
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+
+        transformHeader: function(header) {
+            return header.trim().replace("\ufeff", "");
+        },
+
+        complete: function(results) {
+            console.log("Dữ liệu CSV gốc:", results.data);
+
+            accidentData = results.data
+                .map(function(item) {
+                    return {
+                        id: item.id || "",
+                        viTri: item.viTri || "",
+                        tuyenDuong: item.tuyenDuong || "",
+                        lat: parseFloat(item.lat),
+                        lng: parseFloat(item.lng),
+                        soVu: parseInt(item.soVu),
+                        mucDo: item.mucDo || "",
+                        nguyenNhan: item.nguyenNhan || "",
+                        khuyenCao: item.khuyenCao || ""
+                    };
+                })
+                .filter(function(item) {
+                    return !isNaN(item.lat) && !isNaN(item.lng);
+                });
+
+            console.log("Dữ liệu sau xử lý:", accidentData);
+
+            if (accidentData.length === 0) {
+                alert("Không có dữ liệu hợp lệ. Hãy kiểm tra cột lat, lng trong file data.csv.");
+                return;
+            }
+
+            showAccidents(accidentData);
+        },
+
+        error: function(error) {
+            console.error("Lỗi đọc CSV:", error);
+            alert("Không đọc được file data.csv. Hãy kiểm tra file có nằm cùng thư mục với index.html không.");
+        }
+    });
+
+
+    // =========================
+    // 6. TÌM KIẾM VÀ LỌC
+    // =========================
+
+    function searchAccidents() {
+        const keyword = document
+            .getElementById("searchInput")
+            .value
+            .toLowerCase()
+            .trim();
+
+        const checkedLevels = Array.from(
+            document.querySelectorAll(".levelFilter:checked")
+        ).map(function(checkbox) {
+            return checkbox.value.toLowerCase();
+        });
+
+        const result = accidentData.filter(function(item) {
+            const matchKeyword =
+                keyword === "" ||
+                item.viTri.toLowerCase().includes(keyword) ||
+                item.tuyenDuong.toLowerCase().includes(keyword) ||
+                item.nguyenNhan.toLowerCase().includes(keyword);
+
+            const matchLevel =
+                checkedLevels.length === 0 ||
+                checkedLevels.includes(item.mucDo.toLowerCase());
+
+            return matchKeyword && matchLevel;
+        });
+
+        showAccidents(result);
+    }
+
+
+    function resetSearch() {
+        document.getElementById("searchInput").value = "";
+
+        document.querySelectorAll(".levelFilter").forEach(function(checkbox) {
+            checkbox.checked = false;
+        });
+
+        showAccidents(accidentData);
+    }
+
+
+    // Nhấn Enter để tìm kiếm
+    document.getElementById("searchInput")
+        .addEventListener("keydown", function(event) {
+            if (event.key === "Enter") {
+                searchAccidents();
+            }
+        });
+</script>
+
+</body>
+</html>
