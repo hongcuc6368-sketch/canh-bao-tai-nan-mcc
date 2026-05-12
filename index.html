@@ -418,22 +418,31 @@
         });
 
         showAccidents(result);
+
             if (result.length > 0) {
 
-                setTimeout(function() {
+                if (result.length === 1) {
 
-                    const bounds = markerGroup.getBounds();
+                    // Nếu chỉ có 1 kết quả
+                    map.setView(
+                        [result[0].lat, result[0].lng],
+                        16
+                    );
 
-                    if (bounds.isValid()) {
+                } else {
 
-                        map.fitBounds(bounds, {
-                            padding: [50, 50],
-                            maxZoom: 16
-                        });
+                    // Nếu có nhiều kết quả
+                    const bounds = L.latLngBounds(
+                        result.map(function(item) {
+                            return [item.lat, item.lng];
+                        })
+                    );
 
-                    }
+                    map.fitBounds(bounds, {
+                        padding: [50, 50]
+                    });
 
-                }, 200);
+                }
 
             } else {
 
