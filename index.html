@@ -84,6 +84,7 @@
 
     <button onclick="searchAccidents()">Lọc</button>
     <button onclick="resetSearch()">Hiện tất cả</button>
+    <button onclick="startGPS()">📍 Bật định vị</button>
 </div>
 
 <div id="map"></div>
@@ -126,7 +127,10 @@
 
     let accidentData = [];
     const markerGroup = L.layerGroup().addTo(map);
-
+    let userMarker = null;
+    let userCircle = null;
+    let watchId = null;
+    let lastWarningPoint = null;
 
     // =========================
     // 3. HÀM CHỌN MÀU
@@ -228,7 +232,109 @@
     // =========================
     // 6. TÌM KIẾM VÀ LỌC
     // =========================
+    function getDistanceMeters(lat1, lng1, lat2, lng2) {
+        const R = 6371000;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLng = (lng2 - lng1) * Math.PI / 180;
 
+        const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) *
+            Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLng / 2) * Math.sin(dLng / 2);
+
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return R * c;
+    }
+    function startGPS() {
+        if (!navigator.geolocation) {
+            alert("Trình duyệt không hỗ trợ định vị GPS.");
+            return;
+        }
+
+        alert("Vui lòng cho phép truy cập vị trí để sử dụng chức năng cảnh báo.");
+
+        watchId = navigator.geolocation.watchPosition(
+            function(position) {
+                const userLat = position.coords.latitude;
+                const userLng = position.coords.longitude;
+                const accuracy = position.coords.accuracy;
+
+                updateUserLocation(userLat, userLng, accuracy);
+                checkNearbyDanger(userLat, userLng);
+            },
+            function(error) {
+                alert("Không lấy được vị trí. Hãy kiểm tra quyền định vị trên trình duyệt hoặc điện thoại.");
+                console.error(error);
+            },
+            {
+                enableHighAccuracy: true,
+                maximumAge: 0,
+                timeout: 10000
+            }
+        );
+    }
+    function updateUserLocation(lat, lng, accuracy) {
+        if (userMarker) {
+            map.removeLayer(userMarker);
+        }
+
+        if (userCircle) {
+            map.removeLayer(userCircle);
+        }
+
+        userMarker = L.marker([lat, lng])
+            .addTo(map)
+            .bindPopup("Vị trí hiện tại của bạn");
+
+        userCircle = L.circle([lat, lng], {
+            radius: accuracy,
+            color: "blue",
+            fillColor: "blue",
+            fillOpacity: 0.1
+        }).addTo(map);
+
+        map.setView([lat, lng], 16);
+    }
+    function checkNearbyDanger(userLat, userLng) {
+        const warningDistance = 300000;
+
+        let nearestPoint = null;
+        let nearestDistance = Infinity;
+
+        accidentData.forEach(function(point) {
+            const distance = getDistanceMeters(
+                userLat,
+                userLng,
+                point.lat,
+                point.lng
+            );
+
+            if (distance < nearestDistance) {
+                nearestDistance = distance;
+                nearestPoint = point;
+            }
+        });
+
+        if (nearestPoint && nearestDistance <= warningDistance) {
+            const pointKey = nearestPoint.id || nearestPoint.viTri;
+
+            if (lastWarningPoint !== pointKey) {
+                lastWarningPoint = pointKey;
+
+                alert(
+                    "CẢNH BÁO!\n\n" +
+                    "Bạn đang cách điểm nguy cơ khoảng " +
+                    Math.round(nearestDistance) +
+                    "m.\n\n" +
+                    "Vị trí: " + nearestPoint.viTri + "\n" +
+                    "Mức độ: " + nearestPoint.mucDo + "\n" +
+                    "Khuyến cáo: " + nearestPoint.khuyenCao
+                );
+            }
+        }
+    }
     function searchAccidents() {
         const keyword = document
             .getElementById("searchInput")
