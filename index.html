@@ -169,12 +169,6 @@
                 <b>Khuyến cáo:</b> ${item.khuyenCao}
             `);
         });
-
-        if (data.length > 0) {
-            map.fitBounds(markerGroup.getBounds(), {
-                padding: [30, 30]
-            });
-        }
     }
 
 
@@ -439,7 +433,7 @@
 
                     }
 
-                }, 100);
+                }, 200);
 
             } else {
 
