@@ -248,30 +248,85 @@
         return R * c;
     }
     function startGPS() {
+
         if (!navigator.geolocation) {
-            alert("Trình duyệt không hỗ trợ định vị GPS.");
+            alert("Thiết bị hoặc trình duyệt không hỗ trợ định vị.");
             return;
         }
 
-        alert("Vui lòng cho phép truy cập vị trí để sử dụng chức năng cảnh báo.");
+        alert("Đang lấy vị trí hiện tại. Trên iPhone, hãy mở bằng Safari và cho phép truy cập vị trí.");
 
-        watchId = navigator.geolocation.watchPosition(
+        navigator.geolocation.getCurrentPosition(
             function(position) {
-                const userLat = position.coords.latitude;
-                const userLng = position.coords.longitude;
+
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
                 const accuracy = position.coords.accuracy;
 
-                updateUserLocation(userLat, userLng, accuracy);
-                checkNearbyDanger(userLat, userLng);
+                alert(
+                    "Đã lấy được vị trí:\n" +
+                    "Lat: " + lat + "\n" +
+                    "Lng: " + lng + "\n" +
+                    "Độ chính xác: " + Math.round(accuracy) + "m"
+                );
+
+                updateUserLocation(lat, lng, accuracy);
+                checkNearbyDanger(lat, lng);
+
+                if (watchId) {
+                    navigator.geolocation.clearWatch(watchId);
+                }
+
+                watchId = navigator.geolocation.watchPosition(
+                    function(pos) {
+
+                        const newLat = pos.coords.latitude;
+                        const newLng = pos.coords.longitude;
+                        const newAccuracy = pos.coords.accuracy;
+
+                        updateUserLocation(newLat, newLng, newAccuracy);
+                        checkNearbyDanger(newLat, newLng);
+                    },
+
+                    function(error) {
+                        console.error("Lỗi theo dõi vị trí:", error);
+                    },
+
+                    {
+                        enableHighAccuracy: true,
+                        maximumAge: 5000,
+                        timeout: 20000
+                    }
+                );
             },
+
             function(error) {
-                alert("Không lấy được vị trí. Hãy kiểm tra quyền định vị trên trình duyệt hoặc điện thoại.");
-                console.error(error);
+
+                let message = "";
+
+                if (error.code === 1) {
+                    message = "Người dùng chưa cấp quyền vị trí hoặc quyền bị chặn.";
+                } else if (error.code === 2) {
+                    message = "Không xác định được vị trí. Hãy bật GPS, WiFi hoặc dữ liệu di động.";
+                } else if (error.code === 3) {
+                    message = "Lấy vị trí quá lâu. Hãy thử đứng nơi thoáng hơn rồi bấm lại.";
+                } else {
+                    message = "Không lấy được vị trí.";
+                }
+
+                alert(
+                    message +
+                    "\n\nMã lỗi: " + error.code +
+                    "\nChi tiết: " + error.message
+                );
+
+                console.error("Lỗi GPS:", error);
             },
+
             {
                 enableHighAccuracy: true,
                 maximumAge: 0,
-                timeout: 10000
+                timeout: 20000
             }
         );
     }
