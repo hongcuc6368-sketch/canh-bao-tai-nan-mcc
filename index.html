@@ -424,6 +424,24 @@
         });
 
         showAccidents(result);
+            if (result.length > 0) {
+
+                const bounds = L.latLngBounds(
+                    result.map(function(item) {
+                        return [item.lat, item.lng];
+                    })
+                );
+
+            map.fitBounds(bounds, {
+                padding: [50, 50]
+            });
+
+            }
+            else {
+
+                 alert("Không tìm thấy dữ liệu phù hợp.");
+
+            }
     }
 
 
