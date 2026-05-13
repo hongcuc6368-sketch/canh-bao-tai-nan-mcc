@@ -5,90 +5,524 @@
     <title>Bản đồ cảnh báo tai nạn - Mù Cang Chải</title>
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
         body {
             margin: 0;
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
+            font-family: 'Segoe UI', sans-serif;
+            background: #0b1220;
+            color: white;
+            overflow: hidden;
         }
 
         header {
-            background-color: #0f4c81;
-            color: white;
-            padding: 12px 20px;
-            text-align: center;
+            background: linear-gradient(90deg, #081a35, #10294f);
+            padding: 14px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.4);
         }
 
-        #searchBox {
-            padding: 10px;
-            background: white;
+        header h2 {
+            margin: 0;
+            font-size: 22px;
+            color: #ffffff;
+        }
+
+        .dashboard {
             display: flex;
-            gap: 10px;
-            justify-content: center;
-            align-items: center;
-            flex-wrap: wrap;
-            border-bottom: 1px solid #ddd;
+            height: calc(100vh - 72px);
+        }
+
+        .sidebar {
+            width: 330px;
+            background: #101827;
+            border-right: 1px solid rgba(255,255,255,0.08);
+            padding: 18px;
+            overflow-y: auto;
+        }
+
+        .sidebar h3 {
+            margin-top: 0;
+            color: #60a5fa;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: #172236;
+            border-radius: 14px;
+            padding: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+        }
+
+        .stat-card .value {
+            font-size: 28px;
+            font-weight: bold;
+            margin-top: 6px;
+        }
+
+        .stat-red {
+            border-left: 4px solid #ef4444;
+        }
+
+        .stat-orange {
+            border-left: 4px solid #f97316;
+        }
+
+        .stat-yellow {
+            border-left: 4px solid #eab308;
+        }
+
+        .stat-blue {
+            border-left: 4px solid #3b82f6;
+        }
+
+        .control-panel {
+            margin-top: 10px;
         }
 
         #searchInput {
-            width: 420px;
-            padding: 10px;
-            font-size: 15px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: none;
+            margin-bottom: 14px;
+            background: #1e293b;
+            color: white;
+            font-size: 14px;
+            box-sizing: border-box;
         }
 
-        #searchBox label {
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .checkbox-group label {
             font-size: 14px;
         }
 
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
         button {
-            padding: 10px 14px;
             border: none;
-            border-radius: 5px;
-            background-color: #0f4c81;
-            color: white;
-            cursor: pointer;
+            padding: 12px;
+            border-radius: 10px;
             font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+            color: white;
         }
 
         button:hover {
-            background-color: #1565a8;
+            transform: translateY(-1px);
+        }
+
+        .btn-search {
+            background: #2563eb;
+        }
+
+        .btn-reset {
+            background: #475569;
+        }
+
+        .btn-gps {
+            background: #dc2626;
+        }
+
+        .legend {
+            margin-top: 24px;
+            background: #172236;
+            border-radius: 14px;
+            padding: 14px;
+        }
+
+        .legend h4 {
+            margin-top: 0;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .legend-item i {
+            width: 20px;
+            text-align: center;
+        }
+
+        .map-container {
+            flex: 1;
+            position: relative;
         }
 
         #map {
-            height: calc(100vh - 130px);
             width: 100%;
+            height: 100%;
         }
+
+        .system-status {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: rgba(10,20,40,0.92);
+            padding: 12px 16px;
+            border-radius: 12px;
+            z-index: 1000;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+            backdrop-filter: blur(8px);
+        }
+
+        .system-status h4 {
+            margin: 0 0 6px 0;
+            color: #60a5fa;
+        }
+
+        .system-status p {
+            margin: 4px 0;
+            font-size: 13px;
+        }
+
+        .leaflet-popup-content-wrapper {
+            border-radius: 14px;
+            background: #111827;
+            color: white;
+        }
+
+        .leaflet-popup-tip {
+            background: #111827;
+        }
+
+        .popup-title {
+            font-size: 17px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #f87171;
+        }
+
+        .popup-row {
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+        #toastContainer {
+            position: fixed;
+            top: 90px;
+            right: 24px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .toast {
+            min-width: 280px;
+            max-width: 360px;
+            padding: 14px 16px;
+            border-radius: 14px;
+            color: white;
+            background: #111827;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+            border-left: 5px solid #3b82f6;
+            animation: slideIn 0.25s ease-out;
+            font-size: 14px;
+        }
+
+        .toast-title {
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+
+        .toast.success {
+            border-left-color: #22c55e;
+        }
+
+        .toast.warning {
+            border-left-color: #f59e0b;
+        }
+
+        .toast.danger {
+            border-left-color: #ef4444;
+        }
+
+        .toast.info {
+            border-left-color: #3b82f6;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
     </style>
 </head>
 
 <body>
 
 <header>
-    <h2>Bản đồ cảnh báo điểm nguy cơ tai nạn giao thông xã Mù Cang Chải</h2>
+    <h2>
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        Hệ thống cảnh báo nguy cơ giao thông thông minh
+    </h2>
 </header>
 
-<div id="searchBox">
-    <input 
-        type="text" 
-        id="searchInput" 
-        placeholder="Nhập vị trí, tuyến đường hoặc nguyên nhân..."
-    >
+<div class="dashboard">
 
-    <label><input type="checkbox" class="levelFilter" value="Nguy cơ thấp"> Thấp</label>
-    <label><input type="checkbox" class="levelFilter" value="Nguy cơ trung bình"> Trung bình</label>
-    <label><input type="checkbox" class="levelFilter" value="Nguy cơ cao"> Cao</label>
-    <label><input type="checkbox" class="levelFilter" value="Nguy cơ rất cao"> Rất cao</label>
+    <div class="sidebar">
 
-    <button onclick="searchAccidents()">Lọc</button>
-    <button onclick="resetSearch()">Hiện tất cả</button>
-    <button onclick="startGPS()">📍 Bật định vị</button>
+        <h3>
+            <i class="fa-solid fa-chart-line"></i>
+            Trung tâm điều hành
+        </h3>
+
+        <div class="stats">
+
+            <div class="stat-card stat-red">
+        <div>Tổng điểm nguy cơ</div>
+            <div class="value" id="totalPoints">0</div>
+            </div>
+
+            <div class="stat-card stat-red">
+                <div>Nguy cơ rất cao</div>
+                <div class="value" id="veryHighRisk">0</div>
+            </div>
+
+            <div class="stat-card stat-orange">
+                <div>Nguy cơ cao</div>
+                <div class="value" id="highRisk">0</div>
+            </div>
+
+            <div class="stat-card stat-yellow">
+                <div>Nguy cơ trung bình</div>
+                <div class="value" id="mediumRisk">0</div>
+            </div>
+
+            <div class="stat-card stat-blue">
+                <div>Nguy cơ thấp</div>
+                <div class="value" id="lowRisk">0</div>
+            </div>
+
+        </div>
+
+        <div class="control-panel">
+
+            <input
+                type="text"
+                id="searchInput"
+                placeholder="Tìm tuyến đường, vị trí nguy hiểm..."
+            >
+
+            <div class="checkbox-group">
+                <label><input type="checkbox" class="levelFilter" value="Nguy cơ thấp"> Nguy cơ thấp</label>
+                <label><input type="checkbox" class="levelFilter" value="Nguy cơ trung bình"> Nguy cơ trung bình</label>
+                <label><input type="checkbox" class="levelFilter" value="Nguy cơ cao"> Nguy cơ cao</label>
+                <label><input type="checkbox" class="levelFilter" value="Nguy cơ rất cao"> Nguy cơ rất cao</label>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn-search" onclick="searchAccidents()">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    Tìm kiếm & lọc
+                </button>
+
+                <button class="btn-reset" onclick="resetSearch()">
+                    <i class="fa-solid fa-rotate"></i>
+                    Hiện tất cả
+                </button>
+
+                <button class="btn-gps" onclick="startGPS()">
+                    <i class="fa-solid fa-location-crosshairs"></i>
+                    Bật định vị GPS
+                </button>
+            </div>
+
+        </div>
+
+        <div class="legend">
+
+            <h4>
+                <i class="fa-solid fa-layer-group"></i>
+                Chú giải hệ thống
+            </h4>
+
+            <!-- MỨC ĐỘ NGUY CƠ -->
+
+            <div style="
+                margin-top:14px;
+                margin-bottom:10px;
+                font-weight:bold;
+                color:#93c5fd;
+            ">
+                Mức độ nguy cơ
+            </div>
+
+            <div class="legend-item">
+                <span style="
+                    width:16px;
+                    height:16px;
+                    border-radius:50%;
+                    background:#ef4444;
+                    display:inline-block;
+                "></span>
+
+                Nguy cơ rất cao
+            </div>
+
+            <div class="legend-item">
+                <span style="
+                    width:16px;
+                    height:16px;
+                    border-radius:50%;
+                    background:#f97316;
+                    display:inline-block;
+                "></span>
+
+                Nguy cơ cao
+            </div>
+
+            <div class="legend-item">
+                <span style="
+                    width:16px;
+                    height:16px;
+                    border-radius:50%;
+                    background:#eab308;
+                    display:inline-block;
+                "></span>
+
+                Nguy cơ trung bình
+            </div>
+
+            <div class="legend-item">
+                <span style="
+                    width:16px;
+                    height:16px;
+                    border-radius:50%;
+                    background:#22c55e;
+                    display:inline-block;
+                "></span>
+
+                Nguy cơ thấp
+            </div>
+
+
+            <!-- LOẠI NGUY CƠ -->
+
+            <div style="
+                margin-top:22px;
+                margin-bottom:10px;
+                font-weight:bold;
+                color:#93c5fd;
+            ">
+                Hình thái / nguyên nhân chính
+            </div>
+
+            <div class="legend-item">
+                <i class="fa-solid fa-road"
+                style="color:#eab308"></i>
+
+                Đường dốc cao
+            </div>
+
+            <div class="legend-item">
+                <i class="fa-solid fa-turn-down"
+                style="color:#22c55e"></i>
+
+                Khúc cua gấp
+            </div>
+
+            <div class="legend-item">
+                <i class="fa-solid fa-triangle-exclamation"
+                style="color:#f43f5e"></i>
+
+                Taluy âm / vực sâu
+            </div>
+
+            <div class="legend-item">
+                <i class="fa-solid fa-mountain"
+                style="color:#a855f7"></i>
+
+                Nguy cơ sạt lở
+            </div>
+
+            <div class="legend-item">
+                <i class="fa-solid fa-school"
+                style="color:#3b82f6"></i>
+
+                Gần cổng trường
+            </div>
+
+            <div class="legend-item">
+                <i class="fa-solid fa-shop"
+                style="color:#f59e0b"></i>
+
+                Gần chợ dân sinh
+            </div>
+
+            <div class="legend-item">
+                <i class="fa-solid fa-cow"
+                style="color:#d97706"></i>
+
+                Gia súc qua đường
+            </div>
+
+            <div class="legend-item">
+                <i class="fa-solid fa-smog"
+                style="color:#94a3b8"></i>
+
+                Sương mù theo giờ
+            </div>
+
+            <div class="legend-item">
+                <i class="fa-solid fa-road-barrier"
+                style="color:#64748b"></i>
+
+                Mặt đường xấu
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="map-container">
+
+        <div class="system-status">
+            <h4>
+                <i class="fa-solid fa-satellite"></i>
+                Trạng thái hệ thống
+            </h4>
+            <p>🟢 Hệ thống hoạt động bình thường</p>
+            <p>📡 GPS thời gian thực</p>
+            <p>🚨 Cảnh báo nguy cơ thông minh</p>
+        </div>
+
+        <div id="map"></div>
+        <div id="toastContainer"></div>
+
+    </div>
+
 </div>
-
-<div id="map"></div>
-
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
@@ -142,35 +576,277 @@
         if (soVu >= 5) return "yellow";
         return "green";
     }
+// giong bao nguy hiem
+    function speakWarning(text) {
+        if (!window.speechSynthesis) return;
 
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = "vi-VN";
+        utterance.rate = 0.95;
+        utterance.pitch = 1;
 
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(utterance);
+    }
+// Hàm hiển thị cảnh báo
+    function showToast(title, message, type = "info", duration = 4500) {
+        const container = document.getElementById("toastContainer");
+
+        const toast = document.createElement("div");
+        toast.className = "toast " + type;
+
+        toast.innerHTML = `
+            <div class="toast-title">${title}</div>
+            <div style="line-height:1.5;">
+                ${message.replace(/\n/g, "<br>")}
+            </div>
+        `;
+
+        container.appendChild(toast);
+
+        setTimeout(function() {
+            toast.remove();
+        }, duration);
+    }
+// Ham chọn màu mới
+    function getRiskColor(mucDo) {
+        const level = mucDo.toLowerCase();
+
+        if (level.includes("rất cao")) return "#ef4444";
+        if (level.includes("cao")) return "#f97316";
+        if (level.includes("trung bình")) return "#eab308";
+        return "#22c55e";
+    }
     // =========================
     // 4. HIỂN THỊ MARKER
     // =========================
+    function getMainRiskIcon(item) {
 
+        if (item.taLuy === 1) {
+            return {
+                icon: "fa-solid fa-triangle-exclamation",
+                color: "#f43f5e",
+                label: "Taluy âm / vực sâu"
+            };
+        }
+
+        if (item.satLo === 1) {
+            return {
+                icon: "fa-solid fa-mountain",
+                color: "#a855f7",
+                label: "Nguy cơ sạt lở"
+            };
+        }
+
+        if (item.cuaGap === 1) {
+            return {
+                icon: "fa-solid fa-turn-down",
+                color: "#22c55e",
+                label: "Khúc cua gấp"
+            };
+        }
+
+        if (item.docCao === 1) {
+            return {
+                icon: "fa-solid fa-road",
+                color: "#eab308",
+                label: "Đường dốc cao"
+            };
+        }
+
+        if (item.suongMu === 1) {
+            return {
+                icon: "fa-solid fa-smog",
+                color: "#94a3b8",
+                label: "Sương mù"
+            };
+        }
+
+        if (item.congTruong === 1) {
+            return {
+                icon: "fa-solid fa-school",
+                color: "#3b82f6",
+                label: "Gần cổng trường"
+            };
+        }
+
+        if (item.choDan === 1) {
+            return {
+                icon: "fa-solid fa-shop",
+                color: "#f59e0b",
+                label: "Gần chợ dân sinh"
+            };
+        }
+
+        if (item.giaSuc === 1) {
+            return {
+                icon: "fa-solid fa-cow",
+                color: "#d97706",
+                label: "Gia súc qua đường"
+            };
+        }
+
+        if (item.duongXau === 1) {
+            return {
+                icon: "fa-solid fa-road-barrier",
+                color: "#64748b",
+                label: "Đường xấu"
+            };
+        }
+
+        return {
+            icon: "fa-solid fa-triangle-exclamation",
+            color: "#ef4444",
+            label: "Điểm nguy cơ tai nạn"
+        };
+    }
+    function getRiskFactorsHtml(item) {
+
+        const factors = [];
+
+        if (item.docCao === 1) {
+            factors.push('<span>⛰️ Đường dốc cao</span>');
+        }
+
+        if (item.cuaGap === 1) {
+            factors.push('<span>↩️ Khúc cua gấp</span>');
+        }
+
+        if (item.satLo === 1) {
+            factors.push('<span>🪨 Nguy cơ sạt lở</span>');
+        }
+
+        if (item.taLuy === 1) {
+            factors.push('<span>⚠️ Taluy âm / vực sâu</span>');
+        }
+
+        if (item.congTruong === 1) {
+            factors.push('<span>🏫 Gần cổng trường</span>');
+        }
+
+        if (item.choDan === 1) {
+            factors.push('<span>🛒 Gần chợ dân sinh</span>');
+        }
+
+        if (item.suongMu === 1) {
+            factors.push('<span>🌫️ Có nguy cơ sương mù</span>');
+        }
+
+        if (item.giaSuc === 1) {
+            factors.push('<span>🐄 Gia súc qua đường</span>');
+        }
+
+        if (item.duongXau === 1) {
+            factors.push('<span>🚧 Mặt đường xấu</span>');
+        }
+
+        if (factors.length === 0) {
+            return "Chưa phân loại yếu tố nguy cơ cụ thể";
+        }
+
+        return factors.join("<br>");
+    }
     function showAccidents(data) {
+
         markerGroup.clearLayers();
 
         data.forEach(function(item) {
-            L.circleMarker([item.lat, item.lng], {
-                radius: 10,
-                color: getColor(item.soVu),
-                fillColor: getColor(item.soVu),
-                fillOpacity: 0.85,
-                weight: 2
+
+            const mainRisk = getMainRiskIcon(item);
+            const riskColor = getRiskColor(item.mucDo);
+
+            const customIcon = L.divIcon({
+                className: "custom-div-icon",
+                html: `
+                    <div style="
+                        width: 42px;
+                        height: 42px;
+                        border-radius: 50%;
+                        background: #111827;
+                        border: 3px solid ${riskColor};
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        box-shadow: 0 0 14px ${riskColor};
+                        font-size: 22px;
+                    ">
+                        <i class="${mainRisk.icon}" style="color:${mainRisk.color};"></i>
+                    </div>
+                `,
+                iconSize: [42, 42],
+                iconAnchor: [21, 21]
+            });
+
+            L.marker([item.lat, item.lng], {
+                icon: customIcon
             })
             .addTo(markerGroup)
             .bindPopup(`
-                <b>${item.viTri}</b><br><br>
-                <b>Tuyến đường:</b> ${item.tuyenDuong}<br>
-                <b>Số vụ tai nạn:</b> ${item.soVu}<br>
-                <b>Mức độ:</b> ${item.mucDo}<br>
-                <b>Nguyên nhân:</b> ${item.nguyenNhan}<br>
-                <b>Khuyến cáo:</b> ${item.khuyenCao}
+                <div class="popup-title">
+                    <i class="${mainRisk.icon}" style="color:${mainRisk.color};"></i>
+                    ${item.viTri}
+                </div>
+
+                <div class="popup-row">
+                    <b>Tuyến đường:</b><br>
+                    ${item.tuyenDuong}
+                </div>
+
+                <div class="popup-row">
+                    <b>Mức độ nguy cơ:</b>
+                    <span style="color:${riskColor}; font-weight:bold;">
+                        ${item.mucDo}
+                    </span>
+                </div>
+
+                <div class="popup-row">
+                    <b>Icon chính:</b>
+                    ${mainRisk.label}
+                </div>
+
+                <div class="popup-row">
+                    <b>Số vụ tai nạn:</b>
+                    ${item.soVu}
+                </div>
+
+                <div class="popup-row">
+                    <b>Nguyên nhân mô tả:</b><br>
+                    ${item.nguyenNhan}
+                </div>
+
+                <div class="popup-row">
+                    <b>Yếu tố nguy cơ:</b><br>
+                    ${getRiskFactorsHtml(item)}
+                </div>
+
+                <div class="popup-row">
+                    <b>Khuyến cáo:</b><br>
+                    ${item.khuyenCao}
+                </div>
             `);
+
         });
+        updateDashboardStats();
     }
 
+    function updateDashboardStats() {
+        document.getElementById("totalPoints").innerText = accidentData.length;
+
+        document.getElementById("veryHighRisk").innerText =
+            accidentData.filter(item => item.mucDo.toLowerCase().includes("rất cao")).length;
+
+        document.getElementById("highRisk").innerText =
+            accidentData.filter(item => 
+                item.mucDo.toLowerCase().includes("cao") &&
+                !item.mucDo.toLowerCase().includes("rất cao")
+            ).length;
+
+        document.getElementById("mediumRisk").innerText =
+            accidentData.filter(item => item.mucDo.toLowerCase().includes("trung bình")).length;
+
+        document.getElementById("lowRisk").innerText =
+            accidentData.filter(item => item.mucDo.toLowerCase().includes("thấp")).length;
+    }
 
     // =========================
     // 5. ĐỌC FILE CSV
@@ -199,6 +875,15 @@
                         soVu: parseInt(item.soVu),
                         mucDo: item.mucDo || "",
                         nguyenNhan: item.nguyenNhan || "",
+                        docCao: Number(item.docCao || 0),
+                        cuaGap: Number(item.cuaGap || 0),
+                        satLo: Number(item.satLo || 0),
+                        taLuy: Number(item.taLuy || 0),
+                        congTruong: Number(item.congTruong || 0),
+                        choDan: Number(item.choDan || 0),
+                        suongMu: Number(item.suongMu || 0),
+                        giaSuc: Number(item.giaSuc || 0),
+                        duongXau: Number(item.duongXau || 0),
                         khuyenCao: item.khuyenCao || ""
                     };
                 })
@@ -244,7 +929,11 @@
    function startGPS() {
 
         if (!navigator.geolocation) {
-            alert("Thiết bị không hỗ trợ định vị.");
+            showToast(
+                "Thiết bị không hỗ trợ định vị.\n",
+                "warning",
+                5000
+            );
             return;
         }
 
@@ -306,14 +995,18 @@
 
                 if (error.code === 1) {
 
-                    alert(
-                        "Bạn chưa cấp quyền vị trí."
+                    showToast(
+                        "Bạn chưa cấp quyền vị trí.",
+                        "warning",
+                        5000
                     );
 
                 } else {
 
-                    alert(
-                        "Không lấy được vị trí hiện tại."
+                    showToast(
+                        "Thiết bị không hỗ trợ định vị.",
+                        "warning",
+                        5000
                     );
 
                 }
@@ -350,7 +1043,39 @@
             fillOpacity: 0.1
         }).addTo(map);
 
-        map.setView([lat, lng], 16);
+        const nearbyPoints = accidentData.filter(function(point) {
+
+            const distance = getDistanceMeters(
+                lat,
+                lng,
+                point.lat,
+                point.lng
+            );
+
+            return distance <= 3000;
+
+        });
+
+        if (nearbyPoints.length > 0) {
+
+            const allPoints = [
+                [lat, lng],
+                ...nearbyPoints.map(function(point) {
+                    return [point.lat, point.lng];
+                })
+            ];
+
+            const bounds = L.latLngBounds(allPoints);
+
+            map.fitBounds(bounds, {
+                padding: [80, 80]
+            });
+
+        } else {
+
+            map.setView([lat, lng], 15);
+
+        }
     }
     function checkNearbyDanger(userLat, userLng) {
         const warningDistance = 300000;
@@ -378,14 +1103,23 @@
             if (lastWarningPoint !== pointKey) {
                 lastWarningPoint = pointKey;
 
-                alert(
-                    "CẢNH BÁO!\n\n" +
+                showToast(
+                    "CẢNH BÁO!",
                     "Bạn đang cách điểm nguy cơ khoảng " +
                     Math.round(nearestDistance) +
                     "m.\n\n" +
                     "Vị trí: " + nearestPoint.viTri + "\n" +
                     "Mức độ: " + nearestPoint.mucDo + "\n" +
-                    "Khuyến cáo: " + nearestPoint.khuyenCao
+                    "Khuyến cáo: " + nearestPoint.khuyenCao,
+                     "danger", 15000);
+                // RUNG ĐIỆN THOẠI
+                if (navigator.vibrate) {
+                    navigator.vibrate([300, 150, 300]);
+                }
+
+                // ĐỌC GIỌNG NÓI
+                speakWarning(
+                    "Cảnh báo nguy hiểm. Bạn đang đến gần đoạn đường nguy hiểm."
                 );
             }
         }
@@ -445,8 +1179,11 @@
                 }
 
             } else {
-
-                alert("Không tìm thấy dữ liệu phù hợp.");
+                showToast(
+                    "Không tìm thấy",
+                    "Không có dữ liệu phù hợp.",
+                    "warning"
+                );
 
             }
     }
@@ -460,6 +1197,15 @@
         });
 
         showAccidents(accidentData);
+        const bounds = L.latLngBounds(
+            accidentData.map(function(item) {
+                return [item.lat, item.lng];
+            })
+        );
+
+        map.fitBounds(bounds, {
+            padding: [50, 50]
+        });
     }
 
 
