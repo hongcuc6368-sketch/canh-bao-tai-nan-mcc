@@ -275,7 +275,7 @@
                 transform: translateX(0);
             }
         }
-        #toggleSidebarBtn {
+        #anHienBangDieuKhienBtn {
             position: absolute;
             top: 16px;
             left: 16px;
@@ -384,21 +384,21 @@
             </div>
 
             <div class="btn-group">
-                <button class="btn-search" onclick="searchAccidents()">
+                <button class="btn-search" onclick="timKiemDiemNguyHiem()">
                     <i class="fa-solid fa-magnifying-glass"></i>
                     Tìm kiếm & lọc
                 </button>
 
-                <button class="btn-reset" onclick="resetSearch()">
+                <button class="btn-reset" onclick="hienTatCaDiem()">
                     <i class="fa-solid fa-rotate"></i>
                     Hiện tất cả
                 </button>
 
-                <button class="btn-gps" onclick="unlockVoice(); startGPS()">
+                <button class="btn-gps" onclick="moKhoaGiongNoi(); batDinhViGPS()">
                     <i class="fa-solid fa-location-crosshairs"></i>
                     Bật định vị GPS
                 </button>
-                <button class="btn-reset" onclick="stopGPS()">
+                <button class="btn-reset" onclick="tatDinhViGPS()">
                     <i class="fa-solid fa-location-xmark"></i>
                     Tắt định vị
                 </button>
@@ -552,7 +552,7 @@
     </div>
 
     <div class="map-container">
-        <button id="toggleSidebarBtn" onclick="toggleSidebar()">
+        <button id="anHienBangDieuKhienBtn" onclick="anHienBangDieuKhien()">
             <i class="fa-solid fa-bars"></i>
         </button>
         <div class="system-status">
@@ -579,27 +579,27 @@
     // 1. KHỞI TẠO BẢN ĐỒ
     // =========================
 
-    const map = L.map("map").setView([21.51, 104.18], 11);
+    const map = L.map("map").setView([21.7164, 104.9105], 14);
 
-    const normalMap = L.tileLayer(
+    const banDoThuong = L.tileLayer(
         "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
         {
             attribution: "&copy; OpenStreetMap contributors"
         }
     );
 
-    const satelliteMap = L.tileLayer(
+    const banDoVeTinh = L.tileLayer(
         "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
         {
             attribution: "Tiles &copy; Esri"
         }
     );
 
-    normalMap.addTo(map);
+    banDoThuong.addTo(map);
 
     L.control.layers({
-        "Bản đồ thường": normalMap,
-        "Ảnh vệ tinh": satelliteMap
+        "Bản đồ thường": banDoThuong,
+        "Ảnh vệ tinh": banDoVeTinh
     }).addTo(map);
 
 
@@ -607,16 +607,16 @@
     // 2. BIẾN DỮ LIỆU
     // =========================
 
-    let accidentData = [];
-    const markerGroup = L.layerGroup().addTo(map);
+    let dsNguyHiem = [];
+    const nhomDanhDau = L.layerGroup().addTo(map);
     speechSynthesis.onvoiceschanged = function() {
     console.log(speechSynthesis.getVoices());
     };
-    let userMarker = null;
-    let userCircle = null;
-    let watchId = null;
-    let lastWarningPoint = null;
-    let voiceUnlocked = false;
+    let dauNguoiDung = null;
+    let vungSaiSoGPS = null;
+    let idTheoDoiGPS = null;
+    let diemDaCanhBao = null;
+    let daMoKhoaGiongNoi = false;
 
     // =========================
     // 3. HÀM CHỌN MÀU
@@ -629,7 +629,7 @@
         return "green";
     }
     //Ẩn/hiện sidebar
-    function toggleSidebar() {
+    function anHienBangDieuKhien() {
         const sidebar = document.querySelector(".sidebar");
         const dashboard = document.querySelector(".dashboard");
 
@@ -641,9 +641,9 @@
         }, 300);
     }
 // giong bao nguy hiem
-    function speakWarning(text) {
+    function docCanhBao(text) {
         if (!window.speechSynthesis) return;
-        if (!voiceUnlocked) return;
+        if (!daMoKhoaGiongNoi) return;
 
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = "vi-VN";
@@ -656,7 +656,7 @@
         speechSynthesis.speak(utterance);
     }
     // Hàm bật khóa giọng nói
-    function unlockVoice() {
+    function moKhoaGiongNoi() {
         if (!window.speechSynthesis) return;
 
         const utterance = new SpeechSynthesisUtterance("Đã bật cảnh báo bằng giọng nói.");
@@ -669,10 +669,10 @@
         speechSynthesis.resume();
         speechSynthesis.speak(utterance);
 
-        voiceUnlocked = true;
+        daMoKhoaGiongNoi = true;
     }
 // Hàm hiển thị cảnh báo
-    function showToast(title, message, type = "info", duration = 4500) {
+    function hienThongBao(title, message, type = "info", duration = 4500) {
         const container = document.getElementById("toastContainer");
 
         const toast = document.createElement("div");
@@ -692,7 +692,7 @@
         }, duration);
     }
 // Ham chọn màu mới
-    function getRiskColor(mucDo) {
+    function layMauMucDo(mucDo) {
         const level = mucDo.toLowerCase();
 
         if (level.includes("rất cao")) return "#ef4444";
@@ -703,7 +703,7 @@
     // =========================
     // 4. HIỂN THỊ MARKER
     // =========================
-    function getMainRiskIcon(item) {
+    function layBieuTuongChinh(item) {
 
         if (item.taLuy === 1) {
             return {
@@ -783,90 +783,90 @@
             label: "Điểm nguy cơ tai nạn"
         };
     }
-    function getRiskFactorsHtml(item) {
+    function layDanhSachYeuToHtml(item) {
 
-        const factors = [];
+        const cacYeuTo = [];
 
         if (item.docCao === 1) {
-            factors.push('<span>⛰️ Đường dốc cao</span>');
+            cacYeuTo.push('<span>⛰️ Đường dốc cao</span>');
         }
 
         if (item.cuaGap === 1) {
-            factors.push('<span>↩️ Khúc cua gấp</span>');
+            cacYeuTo.push('<span>↩️ Khúc cua gấp</span>');
         }
 
         if (item.satLo === 1) {
-            factors.push('<span>🪨 Nguy cơ sạt lở</span>');
+            cacYeuTo.push('<span>🪨 Nguy cơ sạt lở</span>');
         }
 
         if (item.taLuy === 1) {
-            factors.push('<span>⚠️ Taluy âm / vực sâu</span>');
+            cacYeuTo.push('<span>⚠️ Taluy âm / vực sâu</span>');
         }
 
         if (item.congTruong === 1) {
-            factors.push('<span>🏫 Gần cổng trường</span>');
+            cacYeuTo.push('<span>🏫 Gần cổng trường</span>');
         }
 
         if (item.choDan === 1) {
-            factors.push('<span>🛒 Gần chợ dân sinh</span>');
+            cacYeuTo.push('<span>🛒 Gần chợ dân sinh</span>');
         }
 
         if (item.suongMu === 1) {
-            factors.push('<span>🌫️ Có nguy cơ sương mù</span>');
+            cacYeuTo.push('<span>🌫️ Có nguy cơ sương mù</span>');
         }
 
         if (item.giaSuc === 1) {
-            factors.push('<span>🐄 Gia súc qua đường</span>');
+            cacYeuTo.push('<span>🐄 Gia súc qua đường</span>');
         }
 
         if (item.duongXau === 1) {
-            factors.push('<span>🚧 Mặt đường xấu</span>');
+            cacYeuTo.push('<span>🚧 Mặt đường xấu</span>');
         }
 
-        if (factors.length === 0) {
+        if (cacYeuTo.length === 0) {
             return "Chưa phân loại yếu tố nguy cơ cụ thể";
         }
 
-        return factors.join("<br>");
+        return cacYeuTo.join("<br>");
     }
-    function showAccidents(data) {
+    function hienThiDiemNguyHiem(data) {
 
-        markerGroup.clearLayers();
+        nhomDanhDau.clearLayers();
 
         data.forEach(function(item) {
 
-            const mainRisk = getMainRiskIcon(item);
-            const riskColor = getRiskColor(item.mucDo);
+            const nguyCoChinh = layBieuTuongChinh(item);
+            const mauNguyCo = layMauMucDo(item.mucDo);
 
-            const customIcon = L.divIcon({
+            const bieuTuongTuyChinh = L.divIcon({
                 className: "custom-div-icon",
                 html: `
                     <div style="
-                        width: 64px;
-                        height: 64px;
+                        width: 56px;
+                        height: 56px;
                         border-radius: 50%;
                         background: #111827;
-                        border: 3px solid ${riskColor};
+                        border: 3px solid ${mauNguyCo};
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        box-shadow: 0 0 14px ${riskColor};
-                        font-size: 32px;
+                        box-shadow: 0 0 14px ${mauNguyCo};
+                        font-size: 28px;
                     ">
-                        <i class="${mainRisk.icon}" style="color:${mainRisk.color};"></i>
+                        <i class="${nguyCoChinh.icon}" style="color:${nguyCoChinh.color};"></i>
                     </div>
                 `,
-                iconSize: [64, 64],
-                iconAnchor: [32, 32]
+                iconSize: [56, 56],
+                iconAnchor: [28, 28]
             });
 
             L.marker([item.lat, item.lng], {
-                icon: customIcon
+                icon: bieuTuongTuyChinh
             })
-            .addTo(markerGroup)
+            .addTo(nhomDanhDau)
             .bindPopup(`
                 <div class="popup-title">
-                    <i class="${mainRisk.icon}" style="color:${mainRisk.color};"></i>
+                    <i class="${nguyCoChinh.icon}" style="color:${nguyCoChinh.color};"></i>
                     ${item.viTri}
                 </div>
 
@@ -877,14 +877,14 @@
 
                 <div class="popup-row">
                     <b>Mức độ nguy cơ:</b>
-                    <span style="color:${riskColor}; font-weight:bold;">
+                    <span style="color:${mauNguyCo}; font-weight:bold;">
                         ${item.mucDo}
                     </span>
                 </div>
 
                 <div class="popup-row">
                     <b>Icon chính:</b>
-                    ${mainRisk.label}
+                    ${nguyCoChinh.label}
                 </div>
 
                 <div class="popup-row">
@@ -899,7 +899,7 @@
 
                 <div class="popup-row">
                     <b>Yếu tố nguy cơ:</b><br>
-                    ${getRiskFactorsHtml(item)}
+                    ${layDanhSachYeuToHtml(item)}
                 </div>
 
                 <div class="popup-row">
@@ -909,26 +909,26 @@
             `);
 
         });
-        updateDashboardStats();
+        capNhatThongKe();
     }
 
-    function updateDashboardStats() {
-        document.getElementById("totalPoints").innerText = accidentData.length;
+    function capNhatThongKe() {
+        document.getElementById("totalPoints").innerText = dsNguyHiem.length;
 
         document.getElementById("veryHighRisk").innerText =
-            accidentData.filter(item => item.mucDo.toLowerCase().includes("rất cao")).length;
+            dsNguyHiem.filter(item => item.mucDo.toLowerCase().includes("rất cao")).length;
 
         document.getElementById("highRisk").innerText =
-            accidentData.filter(item => 
+            dsNguyHiem.filter(item => 
                 item.mucDo.toLowerCase().includes("cao") &&
                 !item.mucDo.toLowerCase().includes("rất cao")
             ).length;
 
         document.getElementById("mediumRisk").innerText =
-            accidentData.filter(item => item.mucDo.toLowerCase().includes("trung bình")).length;
+            dsNguyHiem.filter(item => item.mucDo.toLowerCase().includes("trung bình")).length;
 
         document.getElementById("lowRisk").innerText =
-            accidentData.filter(item => item.mucDo.toLowerCase().includes("thấp")).length;
+            dsNguyHiem.filter(item => item.mucDo.toLowerCase().includes("thấp")).length;
     }
 
     // =========================
@@ -947,7 +947,7 @@
         complete: function(results) {
             console.log("Dữ liệu CSV gốc:", results.data);
 
-            accidentData = results.data
+            dsNguyHiem = results.data
                 .map(function(item) {
                     return {
                         id: item.id || "",
@@ -974,14 +974,14 @@
                     return !isNaN(item.lat) && !isNaN(item.lng);
                 });
 
-            console.log("Dữ liệu sau xử lý:", accidentData);
+            console.log("Dữ liệu sau xử lý:", dsNguyHiem);
 
-            if (accidentData.length === 0) {
+            if (dsNguyHiem.length === 0) {
                 alert("Không có dữ liệu hợp lệ. Hãy kiểm tra cột lat, lng trong file data.csv.");
                 return;
             }
 
-            showAccidents(accidentData);
+            hienThiDiemNguyHiem(dsNguyHiem);
         },
 
         error: function(error) {
@@ -994,7 +994,7 @@
     // =========================
     // 6. TÌM KIẾM VÀ LỌC
     // =========================
-    function getDistanceMeters(lat1, lng1, lat2, lng2) {
+    function tinhKhoangCachMet(lat1, lng1, lat2, lng2) {
         const R = 6371000;
         const dLat = (lat2 - lat1) * Math.PI / 180;
         const dLng = (lng2 - lng1) * Math.PI / 180;
@@ -1009,11 +1009,11 @@
 
         return R * c;
     }
-   function startGPS() {
+   function batDinhViGPS() {
     
-        lastWarningPoint = null;
+        diemDaCanhBao = null;
         if (!navigator.geolocation) {
-            showToast(
+            hienThongBao(
                 "Thiết bị không hỗ trợ định vị.\n",
                 "warning",
                 5000
@@ -1029,16 +1029,16 @@
                 const lng = position.coords.longitude;
                 const accuracy = position.coords.accuracy;
 
-                updateUserLocation(lat, lng, accuracy);
+                capNhatViTriNguoiDung(lat, lng, accuracy);
 
-                checkNearbyDanger(lat, lng);
+                kiemTraDiemNguyHiemGan(lat, lng);
 
                 // Theo dõi di chuyển liên tục
-                if (watchId) {
-                    navigator.geolocation.clearWatch(watchId);
+                if (idTheoDoiGPS) {
+                    navigator.geolocation.clearWatch(idTheoDoiGPS);
                 }
 
-                watchId = navigator.geolocation.watchPosition(
+                idTheoDoiGPS = navigator.geolocation.watchPosition(
 
                     function(pos) {
 
@@ -1046,13 +1046,13 @@
                         const newLng = pos.coords.longitude;
                         const newAccuracy = pos.coords.accuracy;
 
-                        updateUserLocation(
+                        capNhatViTriNguoiDung(
                             newLat,
                             newLng,
                             newAccuracy
                         );
 
-                        checkNearbyDanger(
+                        kiemTraDiemNguyHiemGan(
                             newLat,
                             newLng
                         );
@@ -1079,7 +1079,7 @@
 
                 if (error.code === 1) {
 
-                    showToast(
+                    hienThongBao(
                         "Bạn chưa cấp quyền vị trí.",
                         "warning",
                         5000
@@ -1087,7 +1087,7 @@
 
                 } else {
 
-                    showToast(
+                    hienThongBao(
                         "Thiết bị không hỗ trợ định vị.",
                         "warning",
                         5000
@@ -1107,53 +1107,53 @@
 
         );
     }
-    function stopGPS() {
+    function tatDinhViGPS() {
 
-        if (watchId) {
-            navigator.geolocation.clearWatch(watchId);
-            watchId = null;
+        if (idTheoDoiGPS) {
+            navigator.geolocation.clearWatch(idTheoDoiGPS);
+            idTheoDoiGPS = null;
         }
 
-        if (userMarker) {
-            map.removeLayer(userMarker);
-            userMarker = null;
+        if (dauNguoiDung) {
+            map.removeLayer(dauNguoiDung);
+            dauNguoiDung = null;
         }
 
-        if (userCircle) {
-            map.removeLayer(userCircle);
-            userCircle = null;
+        if (vungSaiSoGPS) {
+            map.removeLayer(vungSaiSoGPS);
+            vungSaiSoGPS = null;
         }
 
-        showToast(
+        hienThongBao(
             "Đã tắt định vị",
             "Ấn nút 'Bật định vị GPS' để kích hoạt lại.",
             "info",
             4000
         );
     }
-    function updateUserLocation(lat, lng, accuracy) {
-        if (userMarker) {
-            map.removeLayer(userMarker);
+    function capNhatViTriNguoiDung(lat, lng, accuracy) {
+        if (dauNguoiDung) {
+            map.removeLayer(dauNguoiDung);
         }
 
-        if (userCircle) {
-            map.removeLayer(userCircle);
+        if (vungSaiSoGPS) {
+            map.removeLayer(vungSaiSoGPS);
         }
 
-        userMarker = L.marker([lat, lng])
+        dauNguoiDung = L.marker([lat, lng])
             .addTo(map)
             .bindPopup("Vị trí hiện tại của bạn");
 
-        userCircle = L.circle([lat, lng], {
+        vungSaiSoGPS = L.circle([lat, lng], {
             radius: accuracy,
             color: "blue",
             fillColor: "blue",
             fillOpacity: 0.1
         }).addTo(map);
 
-        const nearbyPoints = accidentData.filter(function(point) {
+        const nearbyPoints = dsNguyHiem.filter(function(point) {
 
-            const distance = getDistanceMeters(
+            const distance = tinhKhoangCachMet(
                 lat,
                 lng,
                 point.lat,
@@ -1185,40 +1185,40 @@
 
         }
     }
-    function checkNearbyDanger(userLat, userLng) {
-        const warningDistance = 300000;
+    function kiemTraDiemNguyHiemGan(userLat, userLng) {
+        const banKinhCanhBao = 300;
 
-        let nearestPoint = null;
-        let nearestDistance = Infinity;
+        let diemGanNhat = null;
+        let khoangCachGanNhat = Infinity;
 
-        accidentData.forEach(function(point) {
-            const distance = getDistanceMeters(
+        dsNguyHiem.forEach(function(point) {
+            const distance = tinhKhoangCachMet(
                 userLat,
                 userLng,
                 point.lat,
                 point.lng
             );
 
-            if (distance < nearestDistance) {
-                nearestDistance = distance;
-                nearestPoint = point;
+            if (distance < khoangCachGanNhat) {
+                khoangCachGanNhat = distance;
+                diemGanNhat = point;
             }
         });
 
-        if (nearestPoint && nearestDistance <= warningDistance) {
-            const pointKey = nearestPoint.id || nearestPoint.viTri;
+        if (diemGanNhat && khoangCachGanNhat <= banKinhCanhBao) {
+            const maDiem = diemGanNhat.id || diemGanNhat.viTri;
 
-            if (lastWarningPoint !== pointKey) {
-                lastWarningPoint = pointKey;
+            if (diemDaCanhBao !== maDiem) {
+                diemDaCanhBao = maDiem;
 
-                showToast(
+                hienThongBao(
                     "CẢNH BÁO!",
                     "Bạn đang cách điểm nguy cơ khoảng " +
-                    Math.round(nearestDistance) +
+                    Math.round(khoangCachGanNhat) +
                     "m.\n\n" +
-                    "Vị trí: " + nearestPoint.viTri + "\n" +
-                    "Mức độ: " + nearestPoint.mucDo + "\n" +
-                    "Khuyến cáo: " + nearestPoint.khuyenCao,
+                    "Vị trí: " + diemGanNhat.viTri + "\n" +
+                    "Mức độ: " + diemGanNhat.mucDo + "\n" +
+                    "Khuyến cáo: " + diemGanNhat.khuyenCao,
                      "danger", 15000);
                 // RUNG ĐIỆN THOẠI
                 if (navigator.vibrate) {
@@ -1226,40 +1226,40 @@
                 }
 
                 // ĐỌC GIỌNG NÓI
-                speakWarning(
+                docCanhBao(
                     "Cảnh báo nguy hiểm. Bạn đang đến gần đoạn đường nguy hiểm."
                 );
             }
         }
     }
-    function searchAccidents() {
-        const keyword = document
+    function timKiemDiemNguyHiem() {
+        const tuKhoa = document
             .getElementById("searchInput")
             .value
             .toLowerCase()
             .trim();
 
-        const checkedLevels = Array.from(
+        const cacMucDuocChon = Array.from(
             document.querySelectorAll(".levelFilter:checked")
         ).map(function(checkbox) {
             return checkbox.value.toLowerCase();
         });
 
-        const result = accidentData.filter(function(item) {
-            const matchKeyword =
-                keyword === "" ||
-                item.viTri.toLowerCase().includes(keyword) ||
-                item.tuyenDuong.toLowerCase().includes(keyword) ||
-                item.nguyenNhan.toLowerCase().includes(keyword);
+        const result = dsNguyHiem.filter(function(item) {
+            const khopTuKhoa =
+                tuKhoa === "" ||
+                item.viTri.toLowerCase().includes(tuKhoa) ||
+                item.tuyenDuong.toLowerCase().includes(tuKhoa) ||
+                item.nguyenNhan.toLowerCase().includes(tuKhoa);
 
-            const matchLevel =
-                checkedLevels.length === 0 ||
-                checkedLevels.includes(item.mucDo.toLowerCase());
+            const khopMucDo =
+                cacMucDuocChon.length === 0 ||
+                cacMucDuocChon.includes(item.mucDo.toLowerCase());
 
-            return matchKeyword && matchLevel;
+            return khopTuKhoa && khopMucDo;
         });
 
-        showAccidents(result);
+        hienThiDiemNguyHiem(result);
 
             if (result.length > 0) {
 
@@ -1287,7 +1287,7 @@
                 }
 
             } else {
-                showToast(
+                hienThongBao(
                     "Không tìm thấy",
                     "Không có dữ liệu phù hợp.",
                     "warning"
@@ -1297,16 +1297,16 @@
     }
 
 
-    function resetSearch() {
+    function hienTatCaDiem() {
         document.getElementById("searchInput").value = "";
 
         document.querySelectorAll(".levelFilter").forEach(function(checkbox) {
             checkbox.checked = false;
         });
 
-        showAccidents(accidentData);
+        hienThiDiemNguyHiem(dsNguyHiem);
         const bounds = L.latLngBounds(
-            accidentData.map(function(item) {
+            dsNguyHiem.map(function(item) {
                 return [item.lat, item.lng];
             })
         );
@@ -1321,7 +1321,7 @@
     document.getElementById("searchInput")
         .addEventListener("keydown", function(event) {
             if (event.key === "Enter") {
-                searchAccidents();
+                timKiemDiemNguyHiem();
             }
         });
 </script>
