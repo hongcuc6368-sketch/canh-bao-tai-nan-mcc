@@ -356,6 +356,10 @@
                     <i class="fa-solid fa-location-crosshairs"></i>
                     Bật định vị GPS
                 </button>
+                <button class="btn-reset" onclick="stopGPS()">
+                    <i class="fa-solid fa-location-xmark"></i>
+                    Tắt định vị
+                </button>
             </div>
 
         </div>
@@ -561,6 +565,9 @@
 
     let accidentData = [];
     const markerGroup = L.layerGroup().addTo(map);
+    speechSynthesis.onvoiceschanged = function() {
+    console.log(speechSynthesis.getVoices());
+    };
     let userMarker = null;
     let userCircle = null;
     let watchId = null;
@@ -578,15 +585,35 @@
     }
 // giong bao nguy hiem
     function speakWarning(text) {
-        if (!window.speechSynthesis) return;
+
+        if (!window.speechSynthesis) {
+            console.log("Không hỗ trợ speech");
+            return;
+        }
+
+        window.speechSynthesis.cancel();
 
         const utterance = new SpeechSynthesisUtterance(text);
+
         utterance.lang = "vi-VN";
         utterance.rate = 0.95;
         utterance.pitch = 1;
+        utterance.volume = 1;
 
-        window.speechSynthesis.cancel();
-        window.speechSynthesis.speak(utterance);
+        // Chọn voice tiếng Việt nếu có
+        const voices = speechSynthesis.getVoices();
+
+        const vietnameseVoice = voices.find(function(voice) {
+            return voice.lang.includes("vi");
+        });
+
+        if (vietnameseVoice) {
+            utterance.voice = vietnameseVoice;
+        }
+
+        speechSynthesis.speak(utterance);
+
+        console.log("Đang đọc:", text);
     }
 // Hàm hiển thị cảnh báo
     function showToast(title, message, type = "info", duration = 4500) {
@@ -1021,6 +1048,30 @@
                 maximumAge: 0
             }
 
+        );
+    }
+    function stopGPS() {
+
+        if (watchId) {
+            navigator.geolocation.clearWatch(watchId);
+            watchId = null;
+        }
+
+        if (userMarker) {
+            map.removeLayer(userMarker);
+            userMarker = null;
+        }
+
+        if (userCircle) {
+            map.removeLayer(userCircle);
+            userCircle = null;
+        }
+
+        showToast(
+            "Đã tắt định vị",
+            "Ấn nút 'Bật định vị GPS' để kích hoạt lại.",
+            "info",
+            4000
         );
     }
     function updateUserLocation(lat, lng, accuracy) {
