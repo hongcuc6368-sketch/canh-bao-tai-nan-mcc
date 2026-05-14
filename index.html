@@ -307,16 +307,16 @@
             bottom: 20px;
         }
         .leaflet-popup-content {
-            font-size: 16px;
+            font-size: 18px;
             line-height: 1.5;
         }
 
         .popup-title {
-            font-size: 20px;
+            font-size: 22px;
         }
 
         .popup-row {
-            font-size: 15px;
+            font-size: 18px;
         }
     </style>
 </head>
@@ -842,8 +842,8 @@
                 className: "custom-div-icon",
                 html: `
                     <div style="
-                        width: 56px;
-                        height: 56px;
+                        width: 64px;
+                        height: 64px;
                         border-radius: 50%;
                         background: #111827;
                         border: 3px solid ${riskColor};
@@ -851,13 +851,13 @@
                         align-items: center;
                         justify-content: center;
                         box-shadow: 0 0 14px ${riskColor};
-                        font-size: 28px;
+                        font-size: 32px;
                     ">
                         <i class="${mainRisk.icon}" style="color:${mainRisk.color};"></i>
                     </div>
                 `,
-                iconSize: [56, 56],
-                iconAnchor: [28, 28]
+                iconSize: [64, 64],
+                iconAnchor: [32, 32]
             });
 
             L.marker([item.lat, item.lng], {
