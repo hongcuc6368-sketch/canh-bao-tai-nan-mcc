@@ -588,38 +588,16 @@
 
         if (!window.speechSynthesis) return;
 
-        window.speechSynthesis.cancel();
+        speechSynthesis.cancel();
+        speechSynthesis.resume();
 
-        const utterance = new SpeechSynthesisUtterance(text);
+        const utterance =
+            new SpeechSynthesisUtterance(text);
 
         utterance.lang = "vi-VN";
-        utterance.rate = 0.92;
+        utterance.rate = 0.9;
         utterance.pitch = 1;
         utterance.volume = 1;
-
-        const voices = speechSynthesis.getVoices();
-
-        console.log("VOICE HIỆN CÓ:", voices);
-
-        // Ưu tiên voice tiếng Việt
-        let selectedVoice = voices.find(function(v) {
-            return v.lang === "vi-VN";
-        });
-
-        // Nếu không có thì tìm voice có chữ Vietnamese
-        if (!selectedVoice) {
-            selectedVoice = voices.find(function(v) {
-                return v.name.toLowerCase().includes("vietnam");
-            });
-        }
-
-        if (selectedVoice) {
-            utterance.voice = selectedVoice;
-
-            console.log("Đang dùng voice:", selectedVoice.name);
-        } else {
-            console.log("Không tìm thấy voice tiếng Việt");
-        }
 
         speechSynthesis.speak(utterance);
     }
@@ -962,7 +940,8 @@
         return R * c;
     }
    function startGPS() {
-
+    
+        lastWarningPoint = null;
         if (!navigator.geolocation) {
             showToast(
                 "Thiết bị không hỗ trợ định vị.\n",
