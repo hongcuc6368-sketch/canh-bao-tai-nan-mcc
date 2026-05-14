@@ -296,15 +296,21 @@
             flex: 1;
         }
         .leaflet-top.leaflet-left {
-            top: auto;
-            bottom: 90px;
-            left: auto;
-            right: 10px;
+            top: auto !important;
+            left: auto !important;
+            right: 14px !important;
+            bottom: 120px !important;
         }
 
         .leaflet-top.leaflet-right {
-            top: auto;
-            bottom: 20px;
+            top: auto !important;
+            right: 14px !important;
+            bottom: 40px !important;
+        }
+        .leaflet-control-zoom,
+        .leaflet-control-layers {
+            margin: 0 !important;
+            z-index: 3000 !important;
         }
         .leaflet-popup-content {
             font-size: 18px;
@@ -338,6 +344,19 @@
             top: auto !important;
             left: auto !important;
             right: 12px !important;
+        }
+        /* Riêng mobile Safari */
+
+        @media (max-width: 768px) {
+            .leaflet-top.leaflet-left {
+                right: 18px !important;
+                bottom: 150px !important;
+            }
+
+            .leaflet-top.leaflet-right {
+                right: 18px !important;
+                bottom: 70px !important;
+            }
         }
     }
     </style>
