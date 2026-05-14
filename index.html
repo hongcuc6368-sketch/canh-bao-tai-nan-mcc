@@ -275,7 +275,49 @@
                 transform: translateX(0);
             }
         }
+        #toggleSidebarBtn {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            z-index: 1200;
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: #2563eb;
+            color: white;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+        }
 
+        .sidebar.hidden {
+            display: none;
+        }
+
+        .dashboard.sidebar-hidden .map-container {
+            flex: 1;
+        }
+        .leaflet-top.leaflet-left {
+            top: auto;
+            bottom: 90px;
+            left: auto;
+            right: 10px;
+        }
+
+        .leaflet-top.leaflet-right {
+            top: auto;
+            bottom: 20px;
+        }
+        .leaflet-popup-content {
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        .popup-title {
+            font-size: 20px;
+        }
+
+        .popup-row {
+            font-size: 15px;
+        }
     </style>
 </head>
 
@@ -510,7 +552,9 @@
     </div>
 
     <div class="map-container">
-
+        <button id="toggleSidebarBtn" onclick="toggleSidebar()">
+            <i class="fa-solid fa-bars"></i>
+        </button>
         <div class="system-status">
             <h4>
                 <i class="fa-solid fa-satellite"></i>
@@ -583,6 +627,18 @@
         if (soVu >= 10) return "orange";
         if (soVu >= 5) return "yellow";
         return "green";
+    }
+    //Ẩn/hiện sidebar
+    function toggleSidebar() {
+        const sidebar = document.querySelector(".sidebar");
+        const dashboard = document.querySelector(".dashboard");
+
+        sidebar.classList.toggle("hidden");
+        dashboard.classList.toggle("sidebar-hidden");
+
+        setTimeout(function() {
+            map.invalidateSize();
+        }, 300);
     }
 // giong bao nguy hiem
     function speakWarning(text) {
@@ -786,8 +842,8 @@
                 className: "custom-div-icon",
                 html: `
                     <div style="
-                        width: 42px;
-                        height: 42px;
+                        width: 56px;
+                        height: 56px;
                         border-radius: 50%;
                         background: #111827;
                         border: 3px solid ${riskColor};
@@ -795,13 +851,13 @@
                         align-items: center;
                         justify-content: center;
                         box-shadow: 0 0 14px ${riskColor};
-                        font-size: 22px;
+                        font-size: 28px;
                     ">
                         <i class="${mainRisk.icon}" style="color:${mainRisk.color};"></i>
                     </div>
                 `,
-                iconSize: [42, 42],
-                iconAnchor: [21, 21]
+                iconSize: [56, 56],
+                iconAnchor: [28, 28]
             });
 
             L.marker([item.lat, item.lng], {
