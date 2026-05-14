@@ -296,21 +296,15 @@
             flex: 1;
         }
         .leaflet-top.leaflet-left {
-            top: auto !important;
-            left: auto !important;
-            right: 14px !important;
-            bottom: 120px !important;
+            top: auto;
+            bottom: 90px;
+            left: auto;
+            right: 10px;
         }
 
         .leaflet-top.leaflet-right {
-            top: auto !important;
-            right: 14px !important;
-            bottom: 40px !important;
-        }
-        .leaflet-control-zoom,
-        .leaflet-control-layers {
-            margin: 0 !important;
-            z-index: 3000 !important;
+            top: auto;
+            bottom: 20px;
         }
         .leaflet-popup-content {
             font-size: 18px;
@@ -324,41 +318,6 @@
         .popup-row {
             font-size: 18px;
         }
-        @media (max-width: 768px) {
-        .leaflet-control-zoom {
-            position: fixed !important;
-            right: 12px !important;
-            bottom: 160px !important;
-            z-index: 3000 !important;
-        }
-
-        .leaflet-control-layers {
-            position: fixed !important;
-            right: 12px !important;
-            bottom: 35px !important;
-            z-index: 3000 !important;
-        }
-
-        .leaflet-top.leaflet-left,
-        .leaflet-top.leaflet-right {
-            top: auto !important;
-            left: auto !important;
-            right: 12px !important;
-        }
-        /* Riêng mobile Safari */
-
-        @media (max-width: 768px) {
-            .leaflet-top.leaflet-left {
-                right: 18px !important;
-                bottom: 150px !important;
-            }
-
-            .leaflet-top.leaflet-right {
-                right: 18px !important;
-                bottom: 70px !important;
-            }
-        }
-    }
     </style>
 </head>
 
