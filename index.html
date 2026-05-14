@@ -586,34 +586,42 @@
 // giong bao nguy hiem
     function speakWarning(text) {
 
-        if (!window.speechSynthesis) {
-            console.log("Không hỗ trợ speech");
-            return;
-        }
+        if (!window.speechSynthesis) return;
 
         window.speechSynthesis.cancel();
 
         const utterance = new SpeechSynthesisUtterance(text);
 
         utterance.lang = "vi-VN";
-        utterance.rate = 0.95;
+        utterance.rate = 0.92;
         utterance.pitch = 1;
         utterance.volume = 1;
 
-        // Chọn voice tiếng Việt nếu có
         const voices = speechSynthesis.getVoices();
 
-        const vietnameseVoice = voices.find(function(voice) {
-            return voice.lang.includes("vi");
+        console.log("VOICE HIỆN CÓ:", voices);
+
+        // Ưu tiên voice tiếng Việt
+        let selectedVoice = voices.find(function(v) {
+            return v.lang === "vi-VN";
         });
 
-        if (vietnameseVoice) {
-            utterance.voice = vietnameseVoice;
+        // Nếu không có thì tìm voice có chữ Vietnamese
+        if (!selectedVoice) {
+            selectedVoice = voices.find(function(v) {
+                return v.name.toLowerCase().includes("vietnam");
+            });
+        }
+
+        if (selectedVoice) {
+            utterance.voice = selectedVoice;
+
+            console.log("Đang dùng voice:", selectedVoice.name);
+        } else {
+            console.log("Không tìm thấy voice tiếng Việt");
         }
 
         speechSynthesis.speak(utterance);
-
-        console.log("Đang đọc:", text);
     }
 // Hàm hiển thị cảnh báo
     function showToast(title, message, type = "info", duration = 4500) {
