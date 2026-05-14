@@ -352,7 +352,7 @@
                     Hiện tất cả
                 </button>
 
-                <button class="btn-gps" onclick="startGPS()">
+                <button class="btn-gps" onclick="unlockVoice(); startGPS()">
                     <i class="fa-solid fa-location-crosshairs"></i>
                     Bật định vị GPS
                 </button>
@@ -572,6 +572,7 @@
     let userCircle = null;
     let watchId = null;
     let lastWarningPoint = null;
+    let voiceUnlocked = false;
 
     // =========================
     // 3. HÀM CHỌN MÀU
@@ -585,21 +586,34 @@
     }
 // giong bao nguy hiem
     function speakWarning(text) {
-
         if (!window.speechSynthesis) return;
+        if (!voiceUnlocked) return;
 
-        speechSynthesis.cancel();
-        speechSynthesis.resume();
-
-        const utterance =
-            new SpeechSynthesisUtterance(text);
-
+        const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = "vi-VN";
         utterance.rate = 0.9;
         utterance.pitch = 1;
         utterance.volume = 1;
 
+        speechSynthesis.cancel();
+        speechSynthesis.resume();
         speechSynthesis.speak(utterance);
+    }
+    // Hàm bật khóa giọng nói
+    function unlockVoice() {
+        if (!window.speechSynthesis) return;
+
+        const utterance = new SpeechSynthesisUtterance("Đã bật cảnh báo bằng giọng nói.");
+        utterance.lang = "vi-VN";
+        utterance.volume = 1;
+        utterance.rate = 0.9;
+        utterance.pitch = 1;
+
+        speechSynthesis.cancel();
+        speechSynthesis.resume();
+        speechSynthesis.speak(utterance);
+
+        voiceUnlocked = true;
     }
 // Hàm hiển thị cảnh báo
     function showToast(title, message, type = "info", duration = 4500) {
