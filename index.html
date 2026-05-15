@@ -304,8 +304,25 @@
             flex: 1;
         }
         .leaflet-bottom.leaflet-right {
-            right: 14px;
-            bottom: 80px;
+            right: 14px !important;
+            bottom: calc(80px + env(safe-area-inset-bottom)) !important;
+            z-index: 2500 !important;
+        }
+
+        .leaflet-control-zoom,
+        .leaflet-control-layers {
+            margin: 0 0 12px 0 !important;
+        }
+
+        @media (max-width: 768px) {
+            .leaflet-bottom.leaflet-right {
+                right: 18px !important;
+                bottom: calc(95px + env(safe-area-inset-bottom)) !important;
+            }
+
+            .system-status {
+                display: none;
+            }
         }
         .leaflet-popup-content {
             font-size: 18px;
@@ -606,8 +623,8 @@
         "Bản đồ thường": banDoThuong,
         "Ảnh vệ tinh": banDoVeTinh
     }, null, {
-        position: "bottomright"
-        collapsed: false
+        position: "bottomright",
+        collapsed: true
     }).addTo(map);
 
 
@@ -625,6 +642,7 @@
     let idTheoDoiGPS = null;
     let diemDaCanhBao = null;
     let daMoKhoaGiongNoi = false;
+    let daZoomLanDau = false;
 
     // =========================
     // 3. HÀM CHỌN MÀU
@@ -1020,6 +1038,7 @@
    function batDinhViGPS() {
     
         diemDaCanhBao = null;
+        daZoomLanDau = false;
         if (!navigator.geolocation) {
             hienThongBao(
                 "Thiết bị không hỗ trợ định vị.\n",
@@ -1088,7 +1107,8 @@
                 if (error.code === 1) {
 
                     hienThongBao(
-                        "Bạn chưa cấp quyền vị trí.",
+                        "Bạn chưa cấp quyền vị trí",
+                        "Hãy cấp quyền vị trí cho trình duyệt rồi thử lại.",
                         "warning",
                         5000
                     );
@@ -1096,7 +1116,8 @@
                 } else {
 
                     hienThongBao(
-                        "Thiết bị không hỗ trợ định vị.",
+                        "Lỗi định vị",
+                        "Không lấy được vị trí hiện tại.",
                         "warning",
                         5000
                     );
@@ -1132,6 +1153,8 @@
             vungSaiSoGPS = null;
         }
 
+        daZoomLanDau = false;
+
         hienThongBao(
             "Đã tắt định vị",
             "Ấn nút 'Bật định vị GPS' để kích hoạt lại.",
@@ -1141,57 +1164,60 @@
     }
     function capNhatViTriNguoiDung(lat, lng, accuracy) {
         if (dauNguoiDung) {
-            map.removeLayer(dauNguoiDung);
+            dauNguoiDung.setLatLng([lat, lng]);
+        } else {
+            dauNguoiDung = L.marker([lat, lng])
+                .addTo(map)
+                .bindPopup("Vị trí hiện tại của bạn");
         }
 
         if (vungSaiSoGPS) {
-            map.removeLayer(vungSaiSoGPS);
+            vungSaiSoGPS.setLatLng([lat, lng]);
+            vungSaiSoGPS.setRadius(accuracy);
+        } else {
+            vungSaiSoGPS = L.circle([lat, lng], {
+                radius: accuracy,
+                color: "blue",
+                fillColor: "blue",
+                fillOpacity: 0.1
+            }).addTo(map);
         }
 
-        dauNguoiDung = L.marker([lat, lng])
-            .addTo(map)
-            .bindPopup("Vị trí hiện tại của bạn");
+        // Chỉ tự căn bản đồ một lần khi mới bật GPS.
+        // Sau đó người dùng có thể kéo, zoom, tìm kiếm hoặc lọc mà không bị GPS kéo lại liên tục.
+        if (daZoomLanDau) {
+            return;
+        }
 
-        vungSaiSoGPS = L.circle([lat, lng], {
-            radius: accuracy,
-            color: "blue",
-            fillColor: "blue",
-            fillOpacity: 0.1
-        }).addTo(map);
-
-        const nearbyPoints = dsNguyHiem.filter(function(point) {
-
-            const distance = tinhKhoangCachMet(
+        const cacDiemGan = dsNguyHiem.filter(function(point) {
+            const khoangCach = tinhKhoangCachMet(
                 lat,
                 lng,
                 point.lat,
                 point.lng
             );
 
-            return distance <= 3000;
-
+            return khoangCach <= 3000;
         });
 
-        if (nearbyPoints.length > 0) {
-
-            const allPoints = [
+        if (cacDiemGan.length > 0) {
+            const tatCaDiem = [
                 [lat, lng],
-                ...nearbyPoints.map(function(point) {
+                ...cacDiemGan.map(function(point) {
                     return [point.lat, point.lng];
                 })
             ];
 
-            const bounds = L.latLngBounds(allPoints);
+            const khungBanDo = L.latLngBounds(tatCaDiem);
 
-            map.fitBounds(bounds, {
+            map.fitBounds(khungBanDo, {
                 padding: [80, 80]
             });
-
         } else {
-
             map.setView([lat, lng], 15);
-
         }
+
+        daZoomLanDau = true;
     }
     function kiemTraDiemNguyHiemGan(userLat, userLng) {
         const banKinhCanhBao = 300;
