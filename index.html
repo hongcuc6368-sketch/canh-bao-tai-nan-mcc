@@ -295,16 +295,9 @@
         .dashboard.sidebar-hidden .map-container {
             flex: 1;
         }
-        .leaflet-top.leaflet-left {
-            top: auto;
-            bottom: 90px;
-            left: auto;
-            right: 10px;
-        }
-
-        .leaflet-top.leaflet-right {
-            top: auto;
-            bottom: 20px;
+        .leaflet-bottom.leaflet-right {
+            right: 14px;
+            bottom: 80px;
         }
         .leaflet-popup-content {
             font-size: 18px;
@@ -579,8 +572,12 @@
     // 1. KHỞI TẠO BẢN ĐỒ
     // =========================
 
-    const map = L.map("map").setView([21.7164, 104.9105], 14);
-
+    const map = L.map("map", {
+        zoomControl: false
+    }).setView([21.7164, 104.9105], 14);
+    L.control.zoom({
+        position: "bottomright"
+    }).addTo(map);
     const banDoThuong = L.tileLayer(
         "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
         {
@@ -597,9 +594,11 @@
 
     banDoThuong.addTo(map);
 
-    L.control.layers({
+   L.control.layers({
         "Bản đồ thường": banDoThuong,
         "Ảnh vệ tinh": banDoVeTinh
+    }, null, {
+        position: "bottomright"
     }).addTo(map);
 
 
